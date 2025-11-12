@@ -53,7 +53,7 @@ def get_current_gw():
 def get_league_teams(league_id):
   """Fetch the list of team IDs in the league from the league details"""
   try:
-    with open(f'league-{league_id}-details.json', 'r') as f:
+    with open(f'{league_id}_data/league-{league_id}-details.json', 'r') as f:
       details = json.load(f)
   except FileNotFoundError as e:
     print(f"Error: {e}")
@@ -65,10 +65,8 @@ def get_league_teams(league_id):
 def create_league_filestructure(league_id, teams_in_league):
   """Create directory structure for league data if it doesn't exist"""
   directory = f"{league_id}_data"
-  if not os.path.exists(directory):
-    os.makedirs(directory)
-    for team_id in teams_in_league:
-      os.makedirs(os.path.join(directory, str(team_id)))
+  for team_id in teams_in_league:
+    os.makedirs(os.path.join(directory, str(team_id)))
   
 def populate_historic_data(league_id, teams_in_league, current_gw):
   """Populate historic data files. If it exists overwrite with fetched data."""
@@ -91,11 +89,11 @@ def get_endpoints(league_id):
     },
     {
       "url": f"{BASE_URL}/league/{league_id}/details",
-      "filename": f"league-{league_id}-details.json"
+      "filename": f"{league_id}_data/league-{league_id}-details.json"
     },
     {
       "url": f"{BASE_URL}/league/{league_id}/element-status",
-      "filename": f"league-{league_id}-element-status.json"
+      "filename": f"{league_id}_data/league-{league_id}-element-status.json"
     },
     {
       "url": f"{BASE_URL}/game",
@@ -103,15 +101,26 @@ def get_endpoints(league_id):
     },
     {
       "url": f"{BASE_URL}/draft/league/{league_id}/transactions",
-      "filename": f"league-{league_id}-transactions.json"
+      "filename": f"{league_id}_data/league-{league_id}-transactions.json"
     },
     {
       "url": f"{BASE_URL}/draft/league/{league_id}/trades",
-      "filename": f"league-{league_id}-trades.json"
+      "filename": f"{league_id}_data/league-{league_id}-trades.json"
     }
   ]
 
   return endpoints
+
+def check_valid_league(league_id):
+    """Check if the provided league ID is valid by attempting to fetch its details"""
+    url = f"https://draft.premierleague.com/api/league/{league_id}/details"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises HTTPError for bad status codes
+        data = response.json()
+        return 'league' in data
+    except (requests.exceptions.RequestException, ValueError):
+        return False
 
 def main():
   """Main function to fetch all endpoints"""
@@ -121,6 +130,13 @@ def main():
   failed = 0
   
   args = parser.parse_args()
+  
+  if check_valid_league(args.league_id) == False:
+      print(f"✗ Error: League ID {args.league_id} is not valid.")
+      exit(1)
+  
+  if not os.path.exists(f"{args.league_id}_data"):
+    os.makedirs(f"{args.league_id}_data")
 
   for endpoint in get_endpoints(args.league_id):
     if fetch_and_save_json(endpoint["url"], endpoint["filename"]):

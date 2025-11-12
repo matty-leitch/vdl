@@ -38,8 +38,6 @@ def print_team_squads(league_id, team_id, gw):
   print("Benched Points: ", team_data['benched_points'])
   print("Optimal Points: ", team_data['optimal_points'])
 
-
-
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')
   parser.add_argument('--league-id', required=True, help='FPL Draft league ID')

@@ -3,7 +3,7 @@ import argparse
 from calculate_points import get_team_ids
 from pull_data import get_current_gw
 
-def print_tables(league_id, teams, gw, optimal=False):
+def get_league_tables(league_id, teams, gw, optimal=False):
   """
   Print each team's squad organized by position
   Specify optimal=True to print the optimal table in addition to the actual played table
@@ -22,6 +22,10 @@ def print_tables(league_id, teams, gw, optimal=False):
     table[team_data['team_name']] = team_data['total_points']
     optimal_table[team_data['team_name']] = team_data['total_optimal_points']
 
+  return table, optimal_table
+
+def print_tables(league_id, teams, gw, optimal=False):
+  table, optimal_table = get_league_tables(league_id, teams, gw, optimal)
   print(f"=== Gameweek {gw} Table ===")
   for team_name, points in sorted(table.items(), key=lambda x: x[1], reverse=True):
     print(f"{team_name}: {points} points")

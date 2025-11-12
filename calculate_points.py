@@ -8,34 +8,28 @@ def calculate_gw_stats(league_id, team_id, gw):
   Points breakdown and bonus status included.
   """
   try:
-    with open(f'global/gw_{gw}.json', 'r') as f:
-      gw_data = json.load(f)
-    
     with open(f'{league_id}_data/{team_id}/gw_{gw}_complete.json', 'r') as f:
       team_data = json.load(f)
-
-    # Get the previous gameweek data for total points calculation
-    if gw > 1:
-      with open(f'{league_id}_data/{team_id}/gw_{gw - 1}_adjusted.json', 'r') as f:
-        prev_gw_data = json.load(f)
-      prev_total_points = prev_gw_data['total_points']
-      prev_optimal_points = prev_gw_data['total_optimal_points']
-    else:
-      prev_total_points = 0
-      prev_optimal_points = 0
-
-    with open('bootstrap-static.json', 'r') as f:
-      bootstrap = json.load(f)
-      bootstrap_players = {player['id']: player for player in bootstrap['elements']}
-
-    with open(f'league-{league_id}-details.json', 'r') as f:
-      league_details = json.load(f)
-      entries_by_id = {entry['entry_id']: entry for entry in league_details['league_entries']}
-
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run pull_data.py first to fetch the data.")
     return None
+
+  # Get the previous gameweek data for total points calculation
+  if gw > 1:
+    with open(f'{league_id}_data/{team_id}/gw_{gw - 1}_adjusted.json', 'r') as f:
+      prev_gw_data = json.load(f)
+    prev_total_points = prev_gw_data['total_points']
+    prev_optimal_points = prev_gw_data['total_optimal_points']
+    prev_total_player_stats = prev_gw_data['total_player_stats']
+  else:
+    prev_total_player_stats = {}
+    prev_total_points = 0
+    prev_optimal_points = 0
+
+  with open(f'{league_id}_data/league-{league_id}-details.json', 'r') as f:
+    league_details = json.load(f)
+    entries_by_id = {entry['entry_id']: entry for entry in league_details['league_entries']}
 
   # Create a new json structure for the output
   output = {
@@ -49,20 +43,29 @@ def calculate_gw_stats(league_id, team_id, gw):
     'week_points': 0,
     'benched_points': 0,
     'optimal_points': 0,
+    'league_rank': 0,
+    'optimal_league_rank': 0,
     'total_points': prev_total_points,
     'total_optimal_points': prev_optimal_points,
-    'player_stats': []
+    'player_stats': [],
+    'total_player_stats': prev_total_player_stats
   }
 
   # Calculate the points for each player in the team
   for player in team_data['picks']:
     element_id = player['element']
-    player_points = gw_data['elements'][str(element_id)]["stats"]["total_points"]
+    player_stats_gw = get_player_stats_gw(element_id, gw)
+    if player_stats_gw != 0:
+      player_points = player_stats_gw["stats"]["total_points"]
+    else:
+      player_points = 0
 
     # Gather player info
-    player_info = bootstrap_players[element_id]
-    player['first_name'] = player_info['first_name']
-    player['second_name'] = player_info['second_name']
+    player_info = get_player_info(element_id)
+    player_first_name = player_info['first_name']
+    player_second_name = player_info['second_name']
+    player['first_name'] = player_first_name
+    player['second_name'] = player_second_name
     player['true_position'] = player_info['element_type']
     player['points'] = player_points
 
@@ -72,12 +75,35 @@ def calculate_gw_stats(league_id, team_id, gw):
       player['benched'] = False
       output['week_points'] += player_points
       output['total_points'] += player_points
+
+      # Update total player stats
+      if str(element_id) in output['total_player_stats']:
+        output['total_player_stats'][str(element_id)]['total_points'] += player_points
+      else:
+        output['total_player_stats'][str(element_id)] = {
+          'first_name': player_first_name,
+          'second_name': player_second_name,
+          'total_points': player_points,
+          'total_benched_points': 0
+        }
     else:
       player['benched'] = True
       output['benched_points'] += player_points
 
+      # Update total player stats
+      if str(element_id) in output['total_player_stats']:
+        output['total_player_stats'][str(element_id)]['total_benched_points'] += player_points
+      else:
+        output['total_player_stats'][str(element_id)] = {
+          'first_name': player_first_name,
+          'second_name': player_second_name,
+          'total_points': 0,
+          'total_benched_points': player_points
+        }
+
     output['player_stats'].append(player)
 
+  output = sort_total_player_stats(output)
   output['optimal_points'] = calculate_optimal_points(output['player_stats'])
   output['total_optimal_points'] += output['optimal_points']
 
@@ -89,10 +115,20 @@ def calculate_gw_stats(league_id, team_id, gw):
     print(f"Error saving adjusted stats: {e}")
     return None
   
+def sort_total_player_stats(output):
+  """Sort the total player stats by total points descending"""
+  sorted_stats = dict(sorted(
+    output['total_player_stats'].items(),
+    key=lambda item: item[1]['total_points'],
+    reverse=True
+  ))
+  output['total_player_stats'] = sorted_stats
+  return output
+
 def get_team_ids(league_id):
   """Fetch the list of team IDs in the league from the league details"""
   try:
-    with open(f'league-{league_id}-details.json', 'r') as f:
+    with open(f'{league_id}_data/league-{league_id}-details.json', 'r') as f:
       details = json.load(f)
   except FileNotFoundError as e:
     print(f"Error: {e}")
@@ -101,6 +137,24 @@ def get_team_ids(league_id):
 
   teams = {team['entry_id']: team for team in details['league_entries']}
   return teams.keys()
+
+def get_team_name(league_id, team_id):
+  """Fetch the team name for a given team ID in the league from the league details"""
+  try:
+    with open(f'{league_id}_data/league-{league_id}-details.json', 'r') as f:
+      details = json.load(f)
+  except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print("Please run pull_data.py first to fetch the data.")
+    return None
+
+  teams = {team['entry_id']: team for team in details['league_entries']}
+
+  if team_id not in teams:
+    print(f"Team ID {team_id} not found in league {league_id}.")
+    exit(1)
+
+  return teams[team_id]['entry_name']
 
 def calculate_optimal_points(player_stats):
   """
@@ -148,25 +202,107 @@ def calculate_optimal_points(player_stats):
 
   return optimal_points
 
+def get_player_info(player_id):
+  """
+  Helper function to get full player name
+  Input - Player ID
+  Output - Player info dictionary
+  """
+  with open('bootstrap-static.json', 'r') as f:
+    bootstrap = json.load(f)
+    bootstrap_players = {player['id']: player for player in bootstrap['elements']}
+
+  player_info = bootstrap_players[player_id]
+  return player_info
+
+def get_player_name(player_id):
+  """
+  Helper function to get full player name
+  Input - Player ID
+  Output - Full player name string
+  """
+  player_info = get_player_info(player_id)
+  full_name = f"{player_info['first_name']} {player_info['second_name']}"
+  return full_name
+
+def get_player_stats_gw(player_id, gw):
+  """
+  Helper function to get player stats for a specific gameweek
+  Input - Player ID, Gameweek
+  Output - Player stats dictionary for the gameweek
+  """
+  try:
+    with open(f'global/gw_{gw}.json', 'r') as f:
+      gw_data = json.load(f)
+      if str(player_id) not in gw_data['elements']:
+        print(f"Player ID {player_id} not found in gameweek {gw} data.")
+        return 0
+      player_stats = gw_data['elements'][str(player_id)]
+      return player_stats
+  except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print("Please run pull_data.py first to fetch the data.")
+    exit(1)
+
+def calculate_league_positions(league_id, team_ids, gw):
+  """
+  Loop over each team to set league positions for the specified gameweek.
+  Must be run after calculate_gw_stats for all teams for the gameweek.
+  """
+  team_ids_points = {}
+  team_ids_optimal_points = {}
+  for team_id in team_ids:
+    try:
+      with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'r', encoding='utf-8') as f:
+        team_data = json.load(f)
+        team_ids_points[team_id] = team_data['total_points']
+        team_ids_optimal_points[team_id] = team_data['total_optimal_points']
+    except FileNotFoundError as e:
+      print(f"Error: {e}")
+      print("Code error.")
+      exit(1)
+
+  # Sort teams by points descending to determine ranks
+  sorted_teams_by_points = sorted(team_ids_points.items(), key=lambda x: x[1], reverse=True)
+  sorted_teams_by_optimal_points = sorted(team_ids_optimal_points.items(), key=lambda x: x[1], reverse=True)
+
+  for rank, (team_id, _) in enumerate(sorted_teams_by_points, start=1):
+    try:
+      with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'r', encoding='utf-8') as f:
+        team_data = json.load(f)
+        team_data['league_rank'] = rank
+      with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'w', encoding='utf-8') as f:
+        json.dump(team_data, f, indent=2, ensure_ascii=False)
+    except FileNotFoundError as e:
+      print(f"Error: {e}")
+      print("Code error.")
+      exit(1)
+
+  for rank, (team_id, _) in enumerate(sorted_teams_by_optimal_points, start=1):
+    try:
+      with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'r', encoding='utf-8') as f:
+        team_data = json.load(f)
+        team_data['optimal_league_rank'] = rank
+      with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'w', encoding='utf-8') as f:
+        json.dump(team_data, f, indent=2, ensure_ascii=False)
+    except FileNotFoundError as e:
+      print(f"Error: {e}")
+      print("Code error.")
+      exit(1)
+
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')
   parser.add_argument('--league-id', required=True, help='FPL Draft league ID')
-  parser.add_argument('--gw', required=True, help='Current Gameweek')
   
   args = parser.parse_args()
 
   team_ids = get_team_ids(args.league_id)
   current_gw = get_current_gw()
 
-  if args.gw == 'all':
-    for gw in range(1, current_gw + 1):
-      for team_id in team_ids:
-        calculate_gw_stats(args.league_id, team_id, gw)
-  elif (args.gw.isdigit() and (1 <= int(args.gw) <= current_gw)):
+  for gw in range(1, current_gw + 1):
     for team_id in team_ids:
-      calculate_gw_stats(args.league_id, team_id, args.gw)
-  else:
-    print("Invalid Gameweek specified. Use 'all' or a number between 1 and ", current_gw)
+      calculate_gw_stats(args.league_id, team_id, gw)
+    calculate_league_positions(args.league_id, team_ids, gw)
 
 if __name__ == "__main__":
   main()
