@@ -1,37 +1,9 @@
 import requests
 import json
 import os
+import argparse
 
-# Global variable for league ID
-LEAGUE_ID = "15937"
-CURRENT_GW = 0
-
-# Base URL
 BASE_URL = "https://draft.premierleague.com/api"
-
-# Define endpoints and their corresponding filenames
-endpoints = [
-  {
-    "url": f"{BASE_URL}/bootstrap-static",
-    "filename": "bootstrap-static.json"
-  },
-  {
-    "url": f"{BASE_URL}/league/{LEAGUE_ID}/details",
-    "filename": f"league-{LEAGUE_ID}-details.json"
-  },
-  {
-    "url": f"{BASE_URL}/league/{LEAGUE_ID}/element-status",
-    "filename": f"league-{LEAGUE_ID}-element-status.json"
-  },
-  {
-    "url": f"{BASE_URL}/game",
-    "filename": "game.json"
-  },
-  {
-    "url": f"{BASE_URL}/draft/league/{LEAGUE_ID}/transactions",
-    "filename": f"league-{LEAGUE_ID}-transactions.json"
-  }
-]
 
 def fetch_and_save_json(url, filename):
   """Fetch JSON data from URL and save to file"""
@@ -55,12 +27,12 @@ def fetch_and_save_json(url, filename):
     print(f"✗ Error decoding JSON from {url}: {e}")
     return False
   
-def get_global_data():
+def get_global_data(current_gw):
   """Fetch global data up to the current GW"""
   if not os.path.exists("global"):
     os.makedirs("global")
 
-  for gw in range(1, CURRENT_GW + 1):
+  for gw in range(1, current_gw + 1):
     url = f"{BASE_URL}/event/{gw}/live"
     filename = f"global/gw_{gw}.json"
     fetch_and_save_json(url, filename)
@@ -77,8 +49,7 @@ def get_current_gw():
     return (gamestatus['current_event'] - 1)
   else:
     return gamestatus['current_event']
-  
-  
+
 def get_league_teams(league_id):
   """Fetch the list of team IDs in the league from the league details"""
   try:
@@ -99,22 +70,59 @@ def create_league_filestructure(league_id, teams_in_league):
     for team_id in teams_in_league:
       os.makedirs(os.path.join(directory, str(team_id)))
   
-def populate_historic_data(teams_in_league):
+def populate_historic_data(league_id, teams_in_league, current_gw):
   """Populate historic data files. If it exists overwrite with fetched data."""
-  for gw in range(1, CURRENT_GW + 1):
+  for gw in range(1, current_gw + 1):
     for team_id in teams_in_league:
       url = f"{BASE_URL}/entry/{team_id}/event/{gw}"
-      filename = os.path.join(f"{LEAGUE_ID}_data", str(team_id), f"gw_{gw}_complete.json")
+      filename = os.path.join(f"{league_id}_data", str(team_id), f"gw_{gw}_complete.json")
       fetch_and_save_json(url, filename)
+
+def get_endpoints(league_id):
+  """Return a list of endpoints to fetch"""
+  # Base URL
+  BASE_URL = "https://draft.premierleague.com/api"
+
+  # Define endpoints and their corresponding filenames
+  endpoints = [
+    {
+      "url": f"{BASE_URL}/bootstrap-static",
+      "filename": "bootstrap-static.json"
+    },
+    {
+      "url": f"{BASE_URL}/league/{league_id}/details",
+      "filename": f"league-{league_id}-details.json"
+    },
+    {
+      "url": f"{BASE_URL}/league/{league_id}/element-status",
+      "filename": f"league-{league_id}-element-status.json"
+    },
+    {
+      "url": f"{BASE_URL}/game",
+      "filename": "game.json"
+    },
+    {
+      "url": f"{BASE_URL}/draft/league/{league_id}/transactions",
+      "filename": f"league-{league_id}-transactions.json"
+    },
+    {
+      "url": f"{BASE_URL}/draft/league/{league_id}/trades",
+      "filename": f"league-{league_id}-trades.json"
+    }
+  ]
+
+  return endpoints
 
 def main():
   """Main function to fetch all endpoints"""
-  print(f"Starting FPL Draft data fetch for League ID: {LEAGUE_ID}\n")
-  
+  parser = argparse.ArgumentParser(description='Pull FPL Draft data')
+  parser.add_argument('--league-id', required=True, help='FPL Draft league ID')
   successful = 0
   failed = 0
   
-  for endpoint in endpoints:
+  args = parser.parse_args()
+
+  for endpoint in get_endpoints(args.league_id):
     if fetch_and_save_json(endpoint["url"], endpoint["filename"]):
       successful += 1
     else:
@@ -123,22 +131,21 @@ def main():
   
   print(f"Complete! {successful} successful, {failed} failed")
 
-  global CURRENT_GW
-  CURRENT_GW = get_current_gw()
+  current_gw = get_current_gw()
 
-  print(f"\nCurrent Gameweek: {CURRENT_GW}\n")
+  print(f"\nCurrent Gameweek: {current_gw}\n")
 
   # Fetch global data up to the current GW
-  get_global_data()
+  get_global_data(current_gw)
 
   # Fetch league teams
-  teams_in_league = get_league_teams(LEAGUE_ID)
+  teams_in_league = get_league_teams(args.league_id)
 
   # Create league filestructure
-  create_league_filestructure(LEAGUE_ID, teams_in_league)
+  create_league_filestructure(args.league_id, teams_in_league)
 
   # Get all GW data for the league
-  populate_historic_data(teams_in_league)
+  populate_historic_data(args.league_id, teams_in_league, current_gw)
 
 
 if __name__ == "__main__":

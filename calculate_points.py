@@ -1,5 +1,4 @@
 import json
-import os
 import argparse
 from pull_data import get_current_gw
 
@@ -14,6 +13,16 @@ def calculate_gw_stats(league_id, team_id, gw):
     
     with open(f'{league_id}_data/{team_id}/gw_{gw}_complete.json', 'r') as f:
       team_data = json.load(f)
+
+    # Get the previous gameweek data for total points calculation
+    if gw > 1:
+      with open(f'{league_id}_data/{team_id}/gw_{gw - 1}_adjusted.json', 'r') as f:
+        prev_gw_data = json.load(f)
+      prev_total_points = prev_gw_data['total_points']
+      prev_optimal_points = prev_gw_data['total_optimal_points']
+    else:
+      prev_total_points = 0
+      prev_optimal_points = 0
 
     with open('bootstrap-static.json', 'r') as f:
       bootstrap = json.load(f)
@@ -37,9 +46,11 @@ def calculate_gw_stats(league_id, team_id, gw):
     'team_formation': [0, 0, 0, 0],
     'max_formation': [1, 5, 5, 3],
     'min_formation': [1, 3, 2, 1],
-    'total_points': 0,
+    'week_points': 0,
     'benched_points': 0,
     'optimal_points': 0,
+    'total_points': prev_total_points,
+    'total_optimal_points': prev_optimal_points,
     'player_stats': []
   }
 
@@ -59,6 +70,7 @@ def calculate_gw_stats(league_id, team_id, gw):
     if player['position'] <= 11:
       output['team_formation'][player['true_position'] - 1] += 1
       player['benched'] = False
+      output['week_points'] += player_points
       output['total_points'] += player_points
     else:
       player['benched'] = True
@@ -67,6 +79,7 @@ def calculate_gw_stats(league_id, team_id, gw):
     output['player_stats'].append(player)
 
   output['optimal_points'] = calculate_optimal_points(output['player_stats'])
+  output['total_optimal_points'] += output['optimal_points']
 
   try:
     with open(f'{league_id}_data/{team_id}/gw_{gw}_adjusted.json', 'w', encoding='utf-8') as f:

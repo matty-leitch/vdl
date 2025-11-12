@@ -1,5 +1,4 @@
 import json
-import sys
 import argparse
 from calculate_points import get_team_ids
 
