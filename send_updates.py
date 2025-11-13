@@ -14,10 +14,11 @@ import json
 from pull_data import get_current_gw, get_league_teams
 from discord_webhook import send_discord_webhook
 from print_table import print_tables
-from trade_summary import generate_trade_summary
+from track_trades import get_most_recent_trade_id
 from waiver_report import generate_waiver_report
 from waiver_summary import generate_waiver_summary, save_report_to_file
 from trade_summary import generate_trade_summary, save_report_to_file as save_trade_report
+from detect_trade import display_trade
 
 def send_updates(league_id, config):
   """
@@ -102,7 +103,21 @@ def send_updates(league_id, config):
 
   # Update after each notification incase of failure
   update_sent_updates(league_id, sent_updates)
-    
+
+  if (('trade_free_agent_alert' in config) and config['trade_free_agent_alert']):
+    # What trades to send
+    last_element_sent = max(sent_updates['trade_free_agent_alert']) if sent_updates['trade_free_agent_alert'] else 0
+    most_recent_trade = get_most_recent_trade_id()
+
+    for trade in range(1, most_recent_trade + 1):
+      # Generate trade summary     
+      summary_text = display_trade(trade, league_id)
+      
+      if summary_text:
+        success = send_discord_webhook(config['trade_free_agent_alert'], summary_text)
+        if success:
+          sent_updates['trade_free_agent_alert'].append(trade)
+
   # Update after each notification incase of failure
   update_sent_updates(league_id, sent_updates)
 

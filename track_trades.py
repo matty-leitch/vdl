@@ -27,7 +27,7 @@ def collect_trades(league_id, gw):
     i += 1
     effective_gw = trade['event']
 
-    if trade['state'] == 'p':
+    if (trade['state'] == 'p') or (trade['state'] == 'a'):
       trades_summary['trade_info'][i] = {
         'team_from': get_team_name(league_id, trade['offered_entry']),
         'team_to': get_team_name(league_id, trade['received_entry']),
@@ -98,6 +98,26 @@ def save_trades_summary(league_id, trades_summary):
   except IOError as e:
     print(f"Error saving trade tracking: {e}")
     sys.exit(1)
+
+def get_most_recent_trade_id(league_id):
+  """
+  Get the ID of the most recent trade.
+  Returns the highest trade ID as an integer, or None if no trades exist.
+  """
+  try:
+    with open(f'{league_id}_data/trade_tracker.json', 'r') as f:
+      trade_data = json.load(f)
+  except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print("Please run trade_tracker.py first to generate the trade data.")
+    sys.exit(1)
+  
+  if not trade_data['trade_info']:
+    return 0
+  
+  # Get all trade IDs and return the maximum
+  trade_ids = [int(trade_id) for trade_id in trade_data['trade_info'].keys()]
+  return max(trade_ids)
 
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')
