@@ -15,20 +15,6 @@ def load_trade_data(league_id):
     print("Please run trade_tracker.py first to generate the trade data.")
     sys.exit(1)
 
-def get_most_recent_trade_id(league_id):
-  """
-  Get the ID of the most recent trade.
-  Returns the highest trade ID as an integer, or None if no trades exist.
-  """
-  trade_data = load_trade_data(league_id)
-  
-  if not trade_data['trade_info']:
-    return None
-  
-  # Get all trade IDs and return the maximum
-  trade_ids = [int(trade_id) for trade_id in trade_data['trade_info'].keys()]
-  return max(trade_ids)
-
 def display_trade(trade_id, league_id):
   """
   Display details for a specific trade.
@@ -53,6 +39,7 @@ def display_trade(trade_id, league_id):
     output.write(text + "\n")
   
   # Display trade header
+  write_line("@everyone")
   write_line(f"\n{'='*60}")
   write_line(f"🔔 **TRADE ACCEPTED** 🔔")
   write_line(f"{'='*60}\n")
