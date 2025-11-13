@@ -1,5 +1,7 @@
 import json
 import argparse
+import sys
+from io import StringIO
 from collections import defaultdict
 from calculate_points import get_player_name
 from pull_data import get_league_teams
@@ -30,7 +32,7 @@ def load_waiver_data(league_id):
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run waiver_tracker.py first to generate the waiver data.")
-    exit(1)
+    sys.exit(1)
 
 def get_league_table(league_id, teams, gw):
   """
@@ -151,7 +153,11 @@ def format_waiver_kind(kind):
 def generate_waiver_report(league_id, gameweek):
   """
   Generate waiver report for a given gameweek.
+  Prints the report and returns it as a string.
   """
+  # Create StringIO object to capture output
+  output = StringIO()
+  
   waiver_data = load_waiver_data(league_id)
   teams = get_league_teams(league_id)
   
@@ -183,19 +189,24 @@ def generate_waiver_report(league_id, gameweek):
   else:
     teams_to_report = list(recent_teams) if recent_teams else all_teams
   
-  print(f"\n{'='*60}")
-  print(f"WAIVER REPORT - GAMEWEEK {gameweek}")
-  print(f"{'='*60}\n")
+  def write_line(text=""):
+    """Helper function to write to both stdout and StringIO"""
+    print(text)
+    output.write(text + "\n")
+  
+  write_line(f"\n{'='*60}")
+  write_line(f"WAIVER REPORT - GAMEWEEK {gameweek}")
+  write_line(f"{'='*60}\n")
   
   for team in teams_to_report:
-    print(f"\n{team}")
-    print("-" * 60)
+    write_line(f"\n{team}")
+    write_line("-" * 60)
     
     # Current gameweek waivers
     current_waivers = gw_waivers.get(team, [])
     
     if current_waivers:
-      print(f"\nGameweek {gameweek} Transactions:")
+      write_line(f"\nGameweek {gameweek} Transactions:")
       for waiver in current_waivers:
         waiver_type = format_waiver_kind(waiver['kind'])
         # For current GW waivers, we need to get the waiver data to access points
@@ -206,10 +217,10 @@ def generate_waiver_report(league_id, gameweek):
               w_data['player_out'] == waiver['player_out']):
             player_out_formatted = format_player_with_scores(w_data['player_out'], w_data['player_out_points'], gameweek)
             player_in_formatted = format_player_with_scores(w_data['player_in'], w_data['player_in_points'], gameweek)
-            print(f"  [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
+            write_line(f"  [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
             break
     else:
-      print(f"\nNo waivers made in Gameweek {gameweek}")
+      write_line(f"\nNo waivers made in Gameweek {gameweek}")
     
     # All waivers from previous week (sorted best to worst)
     prev_week_waivers = get_previous_week_waivers(waiver_data, team, gameweek)
@@ -218,28 +229,28 @@ def generate_waiver_report(league_id, gameweek):
       # Sort by relative performance (best to worst)
       prev_week_waivers.sort(key=lambda x: x['relative_performance'], reverse=True)
       
-      print(f"\nLast Week's Transactions (GW{gameweek - 1}):")
+      write_line(f"\nLast Week's Transactions (GW{gameweek - 1}):")
       for waiver in prev_week_waivers:
         waiver_type = format_waiver_kind(waiver['kind'])
         player_out_name = get_player_name(waiver['player_out'])
         player_in_name = get_player_name(waiver['player_in'])
         perf_sign = '+' if waiver['relative_performance'] >= 0 else ''
-        print(f"  [{waiver_type}] OUT: {player_out_name} -> IN: {player_in_name}")
-        print(f"    Performance: {perf_sign}{waiver['relative_performance']}")
+        write_line(f"  [{waiver_type}] OUT: {player_out_name} -> IN: {player_in_name}")
+        write_line(f"    Performance: {perf_sign}{waiver['relative_performance']}")
     else:
-      print(f"\nNo waivers made last week")
+      write_line(f"\nNo waivers made last week")
     
-    print()
+    write_line()
   
   # Report on teams that haven't been active recently
   inactive_teams = set(all_teams) - recent_teams
   if inactive_teams:
-    print(f"\n{'='*60}")
-    print(f"INACTIVE TEAMS (No waivers in last 2 weeks)")
-    print(f"{'='*60}\n")
+    write_line(f"\n{'='*60}")
+    write_line(f"INACTIVE TEAMS (No waivers in last 2 weeks)")
+    write_line(f"{'='*60}\n")
     for team in sorted(inactive_teams):
-      print(f"  - {team}")
-    print()
+      write_line(f"  - {team}")
+    write_line()
   
   # Top 3 and Bottom 3 transfers from last week across all teams
   all_prev_week_waivers = []
@@ -261,32 +272,35 @@ def generate_waiver_report(league_id, gameweek):
     # Sort by relative performance
     all_prev_week_waivers.sort(key=lambda x: x['relative_performance'], reverse=True)
     
-    print(f"\n{'='*60}")
-    print(f"TOP 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
-    print(f"{'='*60}\n")
+    write_line(f"\n{'='*60}")
+    write_line(f"TOP 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
+    write_line(f"{'='*60}\n")
     
     for i, waiver in enumerate(all_prev_week_waivers[:3], 1):
       waiver_type = format_waiver_kind(waiver['kind'])
       player_out_formatted = format_player_with_scores(waiver['player_out'], waiver['player_out_points'], prev_gw)
       player_in_formatted = format_player_with_scores(waiver['player_in'], waiver['player_in_points'], prev_gw)
-      print(f"{i}. {waiver['team']}")
-      print(f"   [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
-      print(f"   Performance: +{waiver['relative_performance']}\n")
+      write_line(f"{i}. {waiver['team']}")
+      write_line(f"   [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
+      write_line(f"   Performance: +{waiver['relative_performance']}\n")
     
-    print(f"{'='*60}")
-    print(f"BOTTOM 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
-    print(f"{'='*60}\n")
+    write_line(f"{'='*60}")
+    write_line(f"BOTTOM 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
+    write_line(f"{'='*60}\n")
     
     for i, waiver in enumerate(all_prev_week_waivers[-3:][::-1], 1):
       waiver_type = format_waiver_kind(waiver['kind'])
       player_out_formatted = format_player_with_scores(waiver['player_out'], waiver['player_out_points'], prev_gw)
       player_in_formatted = format_player_with_scores(waiver['player_in'], waiver['player_in_points'], prev_gw)
-      print(f"{i}. {waiver['team']}")
-      print(f"   [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
+      write_line(f"{i}. {waiver['team']}")
+      write_line(f"   [{waiver_type}] OUT: {player_out_formatted} -> IN: {player_in_formatted}")
       perf_sign = '+' if waiver['relative_performance'] >= 0 else ''
-      print(f"   Performance: {perf_sign}{waiver['relative_performance']}\n")
+      write_line(f"   Performance: {perf_sign}{waiver['relative_performance']}\n")
   
-  print(f"{'='*60}\n")
+  write_line(f"{'='*60}\n")
+  
+  # Return the captured output as a string
+  return output.getvalue()
 
 def main():
   parser = argparse.ArgumentParser(description='Generate waiver report for a specific gameweek')

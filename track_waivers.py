@@ -1,5 +1,6 @@
 import json
 import argparse
+import sys
 from calculate_points import get_player_stats_gw, get_team_name
 from pull_data import get_current_gw
 
@@ -13,7 +14,7 @@ def collect_waiver_data(league_id):
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run pull_data.py first to fetch the data.")
-    exit(1)
+    sys.exit(1)
 
   waiver_summary = {
     'waiver_info': {}
@@ -72,7 +73,7 @@ def save_waivers_summary(league_id, waivers_summary):
     print(f"✓ Saved waiver tracking to: {league_id}_data/waiver_tracker.json")
   except IOError as e:
     print(f"Error saving waiver tracking: {e}")
-    exit(1)
+    sys.exit(1)
 
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')

@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import argparse
+import sys
 
 BASE_URL = "https://draft.premierleague.com/api"
 
@@ -133,7 +134,7 @@ def main():
   
   if check_valid_league(args.league_id) == False:
       print(f"✗ Error: League ID {args.league_id} is not valid.")
-      exit(1)
+      sys.exit(1)
   
   if not os.path.exists(f"{args.league_id}_data"):
     os.makedirs(f"{args.league_id}_data")

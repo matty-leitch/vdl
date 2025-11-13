@@ -1,5 +1,6 @@
 import json
 import argparse
+import sys
 from pull_data import get_current_gw
 
 def calculate_gw_stats(league_id, team_id, gw, league_details, bootstrap_players, gw_data_cache):
@@ -151,7 +152,7 @@ def get_team_name(league_id, team_id):
 
   if team_id not in teams:
     print(f"Team ID {team_id} not found in league {league_id}.")
-    exit(1)
+    sys.exit(1)
 
   return teams[team_id]['entry_name']
 
@@ -241,7 +242,7 @@ def get_player_stats_gw(player_id, gw):
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run pull_data.py first to fetch the data.")
-    exit(1)
+    sys.exit(1)
 
 def load_bootstrap_players():
   """Load and cache bootstrap player data"""
@@ -258,7 +259,7 @@ def load_gw_data_cache(current_gw):
         gw_data_cache[gw] = json.load(f)
     except FileNotFoundError as e:
       print(f"Error loading gameweek {gw} data: {e}")
-      exit(1)
+      sys.exit(1)
   return gw_data_cache
 
 def load_league_details(league_id):
@@ -269,7 +270,7 @@ def load_league_details(league_id):
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run pull_data.py first to fetch the data.")
-    exit(1)
+    sys.exit(1)
 
 def calculate_league_positions(league_id, team_ids, gw):
   """
@@ -291,7 +292,7 @@ def calculate_league_positions(league_id, team_ids, gw):
     except FileNotFoundError as e:
       print(f"Error: {e}")
       print("Code error.")
-      exit(1)
+      sys.exit(1)
 
   # Sort teams by points descending to determine ranks
   sorted_teams_by_points = sorted(team_ids_points.items(), key=lambda x: x[1], reverse=True)
@@ -311,7 +312,7 @@ def calculate_league_positions(league_id, team_ids, gw):
         json.dump(team_data, f, indent=2, ensure_ascii=False)
     except IOError as e:
       print(f"Error saving team {team_id} data: {e}")
-      exit(1)
+      sys.exit(1)
 
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')

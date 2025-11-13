@@ -1,5 +1,6 @@
 import json
 import argparse
+import sys
 from calculate_points import get_player_info
 from calculate_points import get_team_name
 from pull_data import get_current_gw
@@ -14,7 +15,7 @@ def collect_trades(league_id, gw):
   except FileNotFoundError as e:
     print(f"Error: {e}")
     print("Please run pull_data.py first to fetch the data.")
-    exit(1)
+    sys.exit(1)
   
   
   trades_summary = {
@@ -76,7 +77,7 @@ def track_trade_performance(player_id, effective_gw, gw):
     except FileNotFoundError as e:
       print(f"Error: {e}")
       print("Please run pull_data.py first to fetch the data.")
-      exit(1)
+      sys.exit(1)
 
     gw_data_player = gw_data['elements'][str(player_id)]
     performance['gameweeks'][working_gw] = {
@@ -96,7 +97,7 @@ def save_trades_summary(league_id, trades_summary):
     print(f"✓ Saved trade tracking to: {league_id}_data/trade_tracker.json")
   except IOError as e:
     print(f"Error saving trade tracking: {e}")
-    exit(1)
+    sys.exit(1)
 
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')

@@ -26,14 +26,30 @@ def get_league_tables(league_id, teams, gw, optimal=False):
 
 def print_tables(league_id, teams, gw, optimal=False):
   table, optimal_table = get_league_tables(league_id, teams, gw, optimal)
+  
   if optimal:
-    print(f"=== Gameweek {gw} Optimal Table ===")
-    for team_name, points in sorted(optimal_table.items(), key=lambda x: x[1], reverse=True):
-      print(f"{team_name}: {points} points")
+    output = f"**Gameweek {gw} Optimal Table**\n```\n"
+    sorted_table = sorted(optimal_table.items(), key=lambda x: x[1], reverse=True)
   else:
-    print(f"=== Gameweek {gw} Table ===")
-    for team_name, points in sorted(table.items(), key=lambda x: x[1], reverse=True):
-      print(f"{team_name}: {points} points")
+    output = f"**Gameweek {gw} Table**\n```\n"
+    sorted_table = sorted(table.items(), key=lambda x: x[1], reverse=True)
+  
+  # Calculate max widths for formatting
+  max_name_len = max(len(team_name) for team_name, _ in sorted_table)
+  max_points_len = max(len(str(points)) for _, points in sorted_table)
+  
+  # Add header
+  output += f"{'Pos':<4} {'Team':<{max_name_len}} {'Points':>{max_points_len}}\n"
+  output += f"{'-'*4} {'-'*max_name_len} {'-'*max_points_len}\n"
+  
+  # Add each team
+  for pos, (team_name, points) in enumerate(sorted_table, 1):
+    output += f"{pos:<4} {team_name:<{max_name_len}} {points:>{max_points_len}}\n"
+  
+  output += "```"
+  
+  print(output)
+  return output
 
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')
