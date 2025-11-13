@@ -166,7 +166,8 @@ def check_config_filled(league_id):
         'table_optimal_webhook',
         'waiver_report_webhook',
         'trade_tracker_webhook',
-        'waiver_tracker_webhook'
+        'waiver_tracker_webhook',
+        'trade_free_agent_alert'
       ])
   if not config_filled:
     print("Error: Configuration for sending updates is incomplete. At least one webhook must be configured.")
