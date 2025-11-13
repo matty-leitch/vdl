@@ -107,7 +107,7 @@ def send_updates(league_id, config):
   if (('trade_free_agent_alert' in config) and config['trade_free_agent_alert']):
     # What trades to send
     last_element_sent = max(sent_updates['trade_free_agent_alert']) if sent_updates['trade_free_agent_alert'] else 0
-    most_recent_trade = get_most_recent_trade_id()
+    most_recent_trade = get_most_recent_trade_id(league_id)
 
     for trade in range(1, most_recent_trade + 1):
       # Generate trade summary     
