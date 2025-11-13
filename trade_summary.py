@@ -42,12 +42,12 @@ def get_trade_winner(team_from_gain, team_to_gain, team_from, team_to):
 
 def get_winner_message(trade, team_from_gain, team_to_gain):
   """
-  Get the message describing who is winning the trade.
+  Get the message describing who is winning the trade (for Discord).
   """
   if team_from_gain > team_to_gain:
-    return f"{trade['team_from']} is winning the trade by `{team_from_gain}` points"
+    return f"**{trade['team_from']}** is winning the trade by `{team_from_gain}` points"
   elif team_to_gain > team_from_gain:
-    return f"{trade['team_to']} is winning the trade by `{team_to_gain}` points"
+    return f"**{trade['team_to']}** is winning the trade by `{team_to_gain}` points"
   else:
     return "The trade is tied at `0` points"
 
@@ -60,22 +60,22 @@ def write_full_trade_details(output, trade, team_from_gain, team_to_gain):
   team_from_crown = " (👑)" if winner == trade['team_from'] else ""
   team_to_crown = " (👑)" if winner == trade['team_to'] else ""
   
-  output.write(f"**{trade['team_from']}**{team_from_crown} and **{trade['team_to']}**{team_to_crown} (GW{trade['effective_gw']})\n")
+  output.write(f"{trade['team_from']}{team_from_crown} and {trade['team_to']}{team_to_crown} (GW{trade['effective_gw']})\n")
   
   # Team From perspective
-  output.write(f"   **{trade['team_from']}** Sent:\n")
+  output.write(f"   {trade['team_from']} Sent:\n")
   for player_data in trade['players_offered'].values():
     output.write(f"      {player_data['player_name']} ({player_data['total_points']})\n")
   
-  output.write(f"   **{trade['team_from']}** Received:\n")
+  output.write(f"   {trade['team_from']} Received:\n")
   for player_data in trade['players_received'].values():
     output.write(f"      {player_data['player_name']} ({player_data['total_points']})\n")
   
   # Get winner message without backticks for text file
   if team_from_gain > team_to_gain:
-    winner_msg = f"**{trade['team_from']}** is winning the trade by {team_from_gain} points"
+    winner_msg = f"{trade['team_from']} is winning the trade by {team_from_gain} points"
   elif team_to_gain > team_from_gain:
-    winner_msg = f"**{trade['team_to']}** is winning the trade by {team_to_gain} points"
+    winner_msg = f"{trade['team_to']} is winning the trade by {team_to_gain} points"
   else:
     winner_msg = "The trade is tied at 0 points"
   
@@ -83,14 +83,14 @@ def write_full_trade_details(output, trade, team_from_gain, team_to_gain):
 
 def write_trade_summary_lines(output, trades_with_gains):
   """
-  Write summary lines for trades (used for both Discord and text file).
+  Write summary lines for trades (used for Discord message).
   """
   for trade, team_from_gain, team_to_gain in trades_with_gains:
     winner = get_trade_winner(team_from_gain, team_to_gain, trade['team_from'], trade['team_to'])
     
     # Summary line
-    team_from_str = trade['team_from']
-    team_to_str = trade['team_to']
+    team_from_str = f"**{trade['team_from']}**"
+    team_to_str = f"**{trade['team_to']}**"
     
     if winner == trade['team_from']:
       team_from_str += " (👑)"
@@ -166,8 +166,8 @@ def generate_trade_summary(league_id, gameweek):
       for trade, team_from_gain, team_to_gain in all_trades_with_gains:
         winner = get_trade_winner(team_from_gain, team_to_gain, trade['team_from'], trade['team_to'])
         
-        team_from_str = f"**{trade['team_from']}**"
-        team_to_str = f"**{trade['team_to']}**"
+        team_from_str = trade['team_from']
+        team_to_str = trade['team_to']
         
         if winner == trade['team_from']:
           team_from_str += " (👑)"
@@ -176,11 +176,11 @@ def generate_trade_summary(league_id, gameweek):
         
         full_output.write(f"{team_from_str} and {team_to_str} (GW{trade['effective_gw']})\n")
         
-        # Winner message without backticks
+        # Winner message without backticks or bold
         if team_from_gain > team_to_gain:
-          winner_msg = f"**{trade['team_from']}** is winning the trade by {team_from_gain} points"
+          winner_msg = f"{trade['team_from']} is winning the trade by {team_from_gain} points"
         elif team_to_gain > team_from_gain:
-          winner_msg = f"**{trade['team_to']}** is winning the trade by {team_to_gain} points"
+          winner_msg = f"{trade['team_to']} is winning the trade by {team_to_gain} points"
         else:
           winner_msg = "The trade is tied at 0 points"
         
