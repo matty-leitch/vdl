@@ -26,13 +26,13 @@ def get_league_tables(league_id, teams, gw, optimal=False):
 
 def print_tables(league_id, teams, gw, optimal=False):
   table, optimal_table = get_league_tables(league_id, teams, gw, optimal)
-  print(f"=== Gameweek {gw} Table ===")
-  for team_name, points in sorted(table.items(), key=lambda x: x[1], reverse=True):
-    print(f"{team_name}: {points} points")
-
   if optimal:
-    print(f"\n\n\n=== Gameweek {gw} Optimal Table ===")
+    print(f"=== Gameweek {gw} Optimal Table ===")
     for team_name, points in sorted(optimal_table.items(), key=lambda x: x[1], reverse=True):
+      print(f"{team_name}: {points} points")
+  else:
+    print(f"=== Gameweek {gw} Table ===")
+    for team_name, points in sorted(table.items(), key=lambda x: x[1], reverse=True):
       print(f"{team_name}: {points} points")
 
 def main():

@@ -20,42 +20,45 @@ def collect_waiver_data(league_id):
   }
   current_gw = get_current_gw()
 
+  # Collect all unique player IDs that we need to fetch
+  player_ids = set()
+  for waiver in full_waiver_data['transactions']:
+    if waiver['result'] == 'a':
+      player_ids.add(waiver['element_in'])
+      player_ids.add(waiver['element_out'])
+
+  # Pre-fetch all player stats for all gameweeks
+  player_stats_cache = {}
+  for player_id in player_ids:
+    player_stats_cache[player_id] = {}
+    for gw in range(1, current_gw + 1):
+      stats = get_player_stats_gw(player_id, gw)
+      points = stats['stats']['total_points'] if stats != 0 else 0
+      player_stats_cache[player_id][gw] = points
+
   i = 0
 
-  # Could be handled more efficiently. Instead of regenerating all every week
-  # we could append new ones and store data like current points more efficiently.
+  # Process waivers using cached data
   for waiver in full_waiver_data['transactions']:
     i += 1
     if waiver['result'] == 'a':
+      player_in_id = waiver['element_in']
+      player_out_id = waiver['element_out']
+      effective_gw = waiver['event']
+
       waiver_summary['waiver_info'][i] = {
         'team': get_team_name(league_id, waiver['entry']),
         'team_id': waiver['entry'],
         'kind': waiver['kind'],
-        'effective_gw': waiver['event'],
-        'player_out': waiver['element_out'],
-        'player_in': waiver['element_in'],
-        'player_in_points': [],
-        'player_out_points': [],
-        'player_in_1w_performance': 0,
-        'player_out_1w_performance': 0,
-        'relative_performance': 0
+        'effective_gw': effective_gw,
+        'player_out': player_out_id,
+        'player_in': player_in_id,
+        'player_in_points': [player_stats_cache[player_in_id][gw] for gw in range(1, current_gw + 1)],
+        'player_out_points': [player_stats_cache[player_out_id][gw] for gw in range(1, current_gw + 1)],
+        'player_in_1w_performance': player_stats_cache[player_in_id][effective_gw],
+        'player_out_1w_performance': player_stats_cache[player_out_id][effective_gw],
+        'relative_performance': player_stats_cache[player_in_id][effective_gw] - player_stats_cache[player_out_id][effective_gw]
       }
-
-      for gw in range(1, current_gw + 1):
-        player_in_stats_gw = get_player_stats_gw(waiver['element_in'], gw)
-        player_out_stats_gw = get_player_stats_gw(waiver['element_out'], gw)
-
-        # Player may not have existed in that GW (e.g., new signings), so handle that case
-        player_in_gw_points = player_in_stats_gw['stats']['total_points'] if player_in_stats_gw != 0 else 0
-        player_out_gw_points = player_out_stats_gw['stats']['total_points'] if player_out_stats_gw != 0 else 0
-
-        waiver_summary['waiver_info'][i]['player_in_points'].append(player_in_gw_points)
-        waiver_summary['waiver_info'][i]['player_out_points'].append(player_out_gw_points)
-
-        if (gw == waiver['event']):
-          waiver_summary['waiver_info'][i]['player_in_1w_performance'] = player_in_gw_points
-          waiver_summary['waiver_info'][i]['player_out_1w_performance'] = player_out_gw_points
-          waiver_summary['waiver_info'][i]['relative_performance'] = player_in_gw_points - player_out_gw_points
 
   return waiver_summary
 
