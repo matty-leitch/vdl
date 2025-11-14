@@ -40,9 +40,9 @@ def display_trade(trade_id, league_id):
   
   # Display trade header
   write_line("@everyone")
-  write_line(f"\n{'='*60}")
+  # write_line(f"\n{'='*60}")
   write_line(f"🔔 **TRADE ACCEPTED** 🔔")
-  write_line(f"{'='*60}\n")
+  # write_line(f"{'='*60}\n")
   
   # Display effective gameweek
   write_line(f"📅 **Proposed Effective Gameweek:** GW{trade['effective_gw']}\n")

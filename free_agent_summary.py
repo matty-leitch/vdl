@@ -62,9 +62,9 @@ def generate_free_agent_summary(league_id, waiver_id):
     summary_output.write(text + "\n")
   
   # Write header
-  write_line(f"\n{'='*60}")
+  # write_line(f"\n{'='*60}")
   write_line(f"**FREE AGENT PICKUP - GAMEWEEK {waiver['effective_gw']}**")
-  write_line(f"{'='*60}\n")
+  # write_line(f"{'='*60}\n")
   
   write_line(f"🆓 **{waiver['team']}** made a free agent pickup\n")
   
