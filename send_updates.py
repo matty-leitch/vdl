@@ -7,6 +7,7 @@ Sends a message to Discord channel via webhook.
 
 import argparse
 import requests
+import bisect
 import os
 import sys
 import json
@@ -18,6 +19,7 @@ from track_trades import get_most_recent_trade_id
 from waiver_report import generate_waiver_report
 from waiver_summary import generate_waiver_summary, save_report_to_file
 from trade_summary import generate_trade_summary, save_report_to_file as save_trade_report
+from track_waivers import get_most_recent_waiver_id
 from detect_trade import display_trade
 
 def send_updates(league_id, config):
@@ -120,6 +122,19 @@ def send_updates(league_id, config):
 
   # Update after each notification incase of failure
   update_sent_updates(league_id, sent_updates)
+
+  if (('free_agent_alert' in config) and config['free_agent_alert']):
+    # What trades to send
+    last_element_sent = max(sent_updates['free_agent_alert']) if sent_updates['free_agent_alert'] else 0
+    most_recent_trade, waiver_ids = get_most_recent_waiver_id(league_id)
+
+    bisect_list = bisect.bisect_left(waiver_ids, last_element_sent)
+    ids_to_check = waiver_ids[bisect_list:]
+
+    for check_fa in waiver_ids:
+      # Checks if it's a free agent     
+
+      # If yes do trade summary
 
   if (('waiver_tracker_webhook' in config) and config['waiver_tracker_webhook']):
     # Currently not implemented

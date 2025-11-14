@@ -75,6 +75,32 @@ def save_waivers_summary(league_id, waivers_summary):
     print(f"Error saving waiver tracking: {e}")
     sys.exit(1)
 
+def load_waiver_data(league_id):
+  """
+  Load waiver data from JSON file.
+  """
+  try:
+    with open(f'{league_id}_data/waiver_tracker.json', 'r') as f:
+      return json.load(f)
+  except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print("Please run waiver_tracker.py first to generate the waiver data.")
+    sys.exit(1)
+
+def get_most_recent_waiver_id(league_id):
+  """
+  Get the most recent waiver ID from the waiver ID file.
+  Also outputs the full list of waivers
+  """
+  data = load_waiver_data(league_id)
+
+  if not data['waiver_info']:
+    return 0
+  
+  # Get all trade IDs and return the maximum
+  waiver_ids = [int(waiver_id) for waiver_id in data['waiver_info'].keys()]
+  return max(waiver_ids), waiver_ids
+
 def main():
   parser = argparse.ArgumentParser(description='Print FPL Draft team squads')
   parser.add_argument('--league-id', required=True, help='FPL Draft league ID')
