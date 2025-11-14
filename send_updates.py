@@ -21,6 +21,7 @@ from waiver_summary import generate_waiver_summary, save_report_to_file
 from trade_summary import generate_trade_summary, save_report_to_file as save_trade_report
 from track_waivers import get_most_recent_waiver_id
 from detect_trade import display_trade
+from free_agent_summary import generate_free_agent_summary
 
 def send_updates(league_id, config):
   """
@@ -106,9 +107,9 @@ def send_updates(league_id, config):
   # Update after each notification incase of failure
   update_sent_updates(league_id, sent_updates)
 
-  if (('trade_free_agent_alert' in config) and config['trade_free_agent_alert']):
+  if (('trade_alert' in config) and config['trade_alert']):
     # What trades to send
-    last_element_sent = max(sent_updates['trade_free_agent_alert']) if sent_updates['trade_free_agent_alert'] else 0
+    last_element_sent = max(sent_updates['trade_alert']) if sent_updates['trade_alert'] else 0
     most_recent_trade = get_most_recent_trade_id(league_id)
 
     for trade in range(last_element_sent + 1, most_recent_trade + 1):
@@ -116,9 +117,9 @@ def send_updates(league_id, config):
       summary_text = display_trade(trade, league_id)
       
       if summary_text:
-        success = send_discord_webhook(config['trade_free_agent_alert'], summary_text)
+        success = send_discord_webhook(config['trade_alert'], summary_text)
         if success:
-          sent_updates['trade_free_agent_alert'].append(trade)
+          sent_updates['trade_alert'].append(trade)
 
   # Update after each notification incase of failure
   update_sent_updates(league_id, sent_updates)
@@ -131,10 +132,19 @@ def send_updates(league_id, config):
     bisect_list = bisect.bisect_left(waiver_ids, last_element_sent)
     ids_to_check = waiver_ids[bisect_list:]
 
-    for check_fa in waiver_ids:
-      # Checks if it's a free agent     
+    for check_fa in ids_to_check:
+      # Checks if it's a free agent
+      is_fa, summary_text = generate_free_agent_summary(league_id, check_fa)
+      if is_fa:
+        success = send_discord_webhook(config['free_agent_alert'], summary_text)
+        if success:
+          sent_updates['free_agent_alert'].append(check_fa)
+      else:
+        # Not a free agent, update config anyway to avoid re-checking
+        sent_updates['free_agent_alert'].append(check_fa)
 
-      # If yes do trade summary
+  # Update after each notification incase of failure
+  update_sent_updates(league_id, sent_updates)
 
   if (('waiver_tracker_webhook' in config) and config['waiver_tracker_webhook']):
     # Currently not implemented
@@ -182,7 +192,8 @@ def check_config_filled(league_id):
         'waiver_report_webhook',
         'trade_tracker_webhook',
         'waiver_tracker_webhook',
-        'trade_free_agent_alert'
+        'trade_alert',
+        'free_agent_alert'
       ])
   if not config_filled:
     print("Error: Configuration for sending updates is incomplete. At least one webhook must be configured.")
