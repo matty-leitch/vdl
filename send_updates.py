@@ -129,7 +129,7 @@ def send_updates(league_id, config):
     last_element_sent = max(sent_updates['free_agent_alert']) if sent_updates['free_agent_alert'] else 0
     most_recent_trade, waiver_ids = get_most_recent_waiver_id(league_id)
 
-    bisect_list = bisect.bisect_left(waiver_ids, last_element_sent)
+    bisect_list = bisect.bisect_left(waiver_ids, last_element_sent + 1)
     ids_to_check = waiver_ids[bisect_list:]
 
     for check_fa in ids_to_check:
