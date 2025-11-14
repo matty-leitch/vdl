@@ -194,9 +194,9 @@ def generate_waiver_report(league_id, gameweek):
     print(text)
     output.write(text + "\n")
   
-  # write_line(f"\n{'='*60}")
+  write_line(f"\n{'='*60}")
   write_line(f"WAIVER REPORT - GAMEWEEK {gameweek}")
-  # write_line(f"{'='*60}\n")
+  write_line(f"{'='*60}\n")
   
   for team in teams_to_report:
     write_line(f"\n{team}")
@@ -245,9 +245,9 @@ def generate_waiver_report(league_id, gameweek):
   # Report on teams that haven't been active recently
   inactive_teams = set(all_teams) - recent_teams
   if inactive_teams:
-    # write_line(f"\n{'='*60}")
+    write_line(f"\n{'='*60}")
     write_line(f"INACTIVE TEAMS (No waivers in last 2 weeks)")
-    # write_line(f"{'='*60}\n")
+    write_line(f"{'='*60}\n")
     for team in sorted(inactive_teams):
       write_line(f"  - {team}")
     write_line()
@@ -272,9 +272,9 @@ def generate_waiver_report(league_id, gameweek):
     # Sort by relative performance
     all_prev_week_waivers.sort(key=lambda x: x['relative_performance'], reverse=True)
     
-    # write_line(f"\n{'='*60}")
+    write_line(f"\n{'='*60}")
     write_line(f"TOP 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
-    # write_line(f"{'='*60}\n")
+    write_line(f"{'='*60}\n")
     
     for i, waiver in enumerate(all_prev_week_waivers[:3], 1):
       waiver_type = format_waiver_kind(waiver['kind'])
@@ -286,7 +286,7 @@ def generate_waiver_report(league_id, gameweek):
     
     write_line(f"{'='*60}")
     write_line(f"BOTTOM 3 TRANSFERS OF THE WEEK (GW{prev_gw})")
-    # write_line(f"{'='*60}\n")
+    write_line(f"{'='*60}\n")
     
     for i, waiver in enumerate(all_prev_week_waivers[-3:][::-1], 1):
       waiver_type = format_waiver_kind(waiver['kind'])
@@ -297,7 +297,7 @@ def generate_waiver_report(league_id, gameweek):
       perf_sign = '+' if waiver['relative_performance'] >= 0 else ''
       write_line(f"   Performance: {perf_sign}{waiver['relative_performance']}\n")
   
-  # write_line(f"{'='*60}\n")
+  write_line(f"{'='*60}\n")
   
   # Return the captured output as a string
   return output.getvalue()

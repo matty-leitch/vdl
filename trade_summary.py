@@ -117,7 +117,7 @@ def generate_trade_summary(league_id, gameweek):
   
   # Write header to console/Discord summary
   # write_line(f"\n{'='*60}")
-  write_line(f"**TRADE SUMMARY - GAMEWEEK {gameweek}**")
+  write_line(f"**TRADE SUMMARY - GAMEWEEK {gameweek}**\n")
   # write_line(f"{'='*60}\n")
   
   # Get trades for this specific gameweek

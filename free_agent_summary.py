@@ -18,16 +18,21 @@ def load_waiver_data(league_id):
 
 def get_recent_scores(points_list, effective_gw, num_weeks=3):
   """
-  Get the most recent N weeks of scores for a player after the effective gameweek.
+  Get the most recent N weeks of scores for a player before the effective gameweek.
+  For effective GW11, shows GW8, GW9, GW10.
+  Points list is 0-indexed (index 0 = GW1, index 1 = GW2, etc.)
   """
-  end_idx = effective_gw + num_weeks
-  start_idx = effective_gw
+  # For GW11, we want indices 7,8,9 (GW8,9,10)
+  end_idx = effective_gw - 1  # For GW11, this is 10
+  start_idx = max(0, end_idx - num_weeks)  # For GW11, this is 7
+  
   scores = points_list[start_idx:end_idx]
   return scores
 
 def format_player_with_scores(player_id, points_list, effective_gw):
   """
-  Format player name with their recent scores after the effective gameweek.
+  Format player name with their recent scores before the effective gameweek.
+  For effective GW11, shows scores from GW8, GW9, GW10.
   """
   player_name = get_player_name(player_id)
   recent_scores = get_recent_scores(points_list, effective_gw)
@@ -62,20 +67,15 @@ def generate_free_agent_summary(league_id, waiver_id):
     summary_output.write(text + "\n")
   
   # Write header
-  # write_line(f"\n{'='*60}")
-  write_line(f"**FREE AGENT PICKUP - GAMEWEEK {waiver['effective_gw']}**")
-  # write_line(f"{'='*60}\n")
-  
+  write_line(f"🔔 **FREE AGENT PICKUP** 🔔\n")
+
   write_line(f"🆓 **{waiver['team']}** made a free agent pickup\n")
   
-  player_out_formatted = format_player_with_scores(waiver['player_out'], waiver['player_out_points'], waiver['effective_gw'] - 1)
-  player_in_formatted = format_player_with_scores(waiver['player_in'], waiver['player_in_points'], waiver['effective_gw'] - 1)
+  player_out_formatted = format_player_with_scores(waiver['player_out'], waiver['player_out_points'], waiver['effective_gw'])
+  player_in_formatted = format_player_with_scores(waiver['player_in'], waiver['player_in_points'], waiver['effective_gw'])
   
   write_line(f"   📤 OUT: {player_out_formatted}")
-  write_line(f"   📥 IN:  {player_in_formatted}")
-  
-  perf_sign = '+' if waiver['relative_performance'] >= 0 else ''
-  write_line(f"   `{perf_sign}{waiver['relative_performance']}`\n")
+  write_line(f"   📥 IN:  {player_in_formatted}\n")
   
   return True, summary_output.getvalue()
 
