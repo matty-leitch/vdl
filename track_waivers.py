@@ -2,7 +2,7 @@ import json
 import argparse
 import sys
 from calculate_points import get_player_stats_gw, get_team_name
-from pull_data import get_current_gw
+from pull_data import get_current_gw, get_waivered_gw
 
 def collect_waiver_data(league_id):
   """
@@ -56,10 +56,16 @@ def collect_waiver_data(league_id):
         'player_in': player_in_id,
         'player_in_points': [player_stats_cache[player_in_id][gw] for gw in range(1, current_gw + 1)],
         'player_out_points': [player_stats_cache[player_out_id][gw] for gw in range(1, current_gw + 1)],
-        'player_in_1w_performance': player_stats_cache[player_in_id][effective_gw],
-        'player_out_1w_performance': player_stats_cache[player_out_id][effective_gw],
-        'relative_performance': player_stats_cache[player_in_id][effective_gw] - player_stats_cache[player_out_id][effective_gw]
+        'player_in_1w_performance': "N/A",
+        'player_out_1w_performance': "N/A",
+        'relative_performance': "N/A"
       }
+
+      if effective_gw <= current_gw:
+        waiver_summary['waiver_info'][i]['player_in_1w_performance'] = player_stats_cache[player_in_id][effective_gw]
+        waiver_summary['waiver_info'][i]['player_out_1w_performance'] = player_stats_cache[player_out_id][effective_gw]
+        waiver_summary['waiver_info'][i]['relative_performance'] = \
+          player_stats_cache[player_in_id][effective_gw] - player_stats_cache[player_out_id][effective_gw]
 
   return waiver_summary
 

@@ -38,6 +38,19 @@ def get_global_data(current_gw):
     filename = f"global/gw_{gw}.json"
     fetch_and_save_json(url, filename)
 
+def get_waivered_gw():
+  try:
+    with open('game.json', 'r') as f:
+      gamestatus = json.load(f)
+  except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print("Please run pull_data.py first to fetch the data.")
+
+  if gamestatus['waivers_processed']:
+    return gamestatus['current_event'] + 1
+  else:
+    return gamestatus['current_event']
+
 def get_current_gw():
   try:
     with open('game.json', 'r') as f:
@@ -67,7 +80,8 @@ def create_league_filestructure(league_id, teams_in_league):
   """Create directory structure for league data if it doesn't exist"""
   directory = f"{league_id}_data"
   for team_id in teams_in_league:
-    os.makedirs(os.path.join(directory, str(team_id)))
+    if not os.path.exists(os.path.join(directory, str(team_id))):
+      os.makedirs(os.path.join(directory, str(team_id)))
   
 def populate_historic_data(league_id, teams_in_league, current_gw):
   """Populate historic data files. If it exists overwrite with fetched data."""

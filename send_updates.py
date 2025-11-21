@@ -12,7 +12,7 @@ import os
 import sys
 import json
 
-from pull_data import get_current_gw, get_league_teams
+from pull_data import get_current_gw, get_waivered_gw, get_league_teams
 from discord_webhook import send_discord_webhook
 from print_table import print_tables
 from track_trades import get_most_recent_trade_id
@@ -36,6 +36,7 @@ def send_updates(league_id, config):
   """
   sent_updates = check_sent_updates(league_id, config)
   current_gw = get_current_gw()
+  waivered_gw = get_waivered_gw()
   teams = get_league_teams(league_id)
   
   # Each update needs to be treated separately
@@ -70,7 +71,7 @@ def send_updates(league_id, config):
   if (('waiver_report_webhook' in config) and config['waiver_report_webhook']):
     # What game weeks to send
     last_element_sent = max(sent_updates['waiver_report_webhook']) if sent_updates['waiver_report_webhook'] else 0
-    gameweeks_to_send = range(last_element_sent + 1, current_gw + 1)
+    gameweeks_to_send = range(last_element_sent + 1, waivered_gw + 1)
     for gw in gameweeks_to_send:
       # Generate full report
       full_report = generate_waiver_report(league_id, gw)
