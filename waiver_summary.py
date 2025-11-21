@@ -75,7 +75,8 @@ def get_all_time_extremes(waiver_data):
   """
   all_waivers = []
   for waiver_id, waiver in waiver_data['waiver_info'].items():
-    all_waivers.append(waiver)
+    if isinstance(waiver['relative_performance'], int):
+      all_waivers.append(waiver)
   
   if not all_waivers:
     return None, None
